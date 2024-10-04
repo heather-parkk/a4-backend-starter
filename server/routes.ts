@@ -1,11 +1,9 @@
 import { ObjectId } from "mongodb";
 
-import { Router, getExpressRouter } from "./framework/router";
+import { getExpressRouter, Router } from "./framework/router";
 
-import { Authing, Friending, Posting, Sessioning } from "./app";
-import { PostOptions } from "./concepts/posting";
+import { Authing, Chatting, Rating, Sessioning } from "./app";
 import { SessionDoc } from "./concepts/sessioning";
-import Responses from "./responses";
 
 import { z } from "zod";
 
@@ -70,87 +68,51 @@ class Routes {
     return { msg: "Logged out!" };
   }
 
-  @Router.get("/posts")
-  @Router.validate(z.object({ author: z.string().optional() }))
-  async getPosts(author?: string) {
-    let posts;
-    if (author) {
-      const id = (await Authing.getUserByUsername(author))._id;
-      posts = await Posting.getByAuthor(id);
-    } else {
-      posts = await Posting.getPosts();
-    }
-    return Responses.posts(posts);
+  @Router.post("/rate")
+  @Router.validate(z.object({ targetUserId: z.string(), like: z.boolean() }))
+  async rateUser(sessionId: ObjectId, targetUserId: ObjectId, like: boolean) {
+    const session = await Sessioning.getSession(sessionId);
+    await Rating.rateUser(session.userId, targetUserId, like);
+    return { msg: "Rating submitted!" };
   }
 
-  @Router.post("/posts")
-  async createPost(session: SessionDoc, content: string, options?: PostOptions) {
-    const user = Sessioning.getUser(session);
-    const created = await Posting.create(user, content, options);
-    return { msg: created.msg, post: await Responses.post(created.post) };
+  @Router.post("/chat")
+  @Router.validate(z.object({ targetUserId: z.string() }))
+  async startChat(sessionId: ObjectId, targetUserId: ObjectId) {
+    const session = await Sessioning.getSession(sessionId);
+    const chat = await Chatting.initiateChat(session.userId, targetUserId);
+    return { msg: "Chat began!", chat };
   }
 
-  @Router.patch("/posts/:id")
-  async updatePost(session: SessionDoc, id: string, content?: string, options?: PostOptions) {
-    const user = Sessioning.getUser(session);
-    const oid = new ObjectId(id);
-    await Posting.assertAuthorIsUser(oid, user);
-    return await Posting.update(oid, content, options);
+  @Router.get("/chats")
+  async getChats(userId: ObjectId) {
+    const chats = await Chatting.getChatsForUser(userId);
+    return { msg: "Chats retrieved.", chats };
   }
 
-  @Router.delete("/posts/:id")
-  async deletePost(session: SessionDoc, id: string) {
-    const user = Sessioning.getUser(session);
-    const oid = new ObjectId(id);
-    await Posting.assertAuthorIsUser(oid, user);
-    return Posting.delete(oid);
+  @Router.delete("/chats/:id")
+  async endChat(chatId: ObjectId) {
+    await Chatting.endChat(chatId);
+    return { msg: "Chat ended. Find another match soon?" };
   }
 
-  @Router.get("/friends")
-  async getFriends(session: SessionDoc) {
-    const user = Sessioning.getUser(session);
-    return await Authing.idsToUsernames(await Friending.getFriends(user));
+  @Router.get("/meetings")
+  async listMeetings(userId: ObjectId) {
+    const meetings = await Meeting.getMeetingsForUser(userId);
+    return { msg: "Meetings exists.", meetings };
   }
 
-  @Router.delete("/friends/:friend")
-  async removeFriend(session: SessionDoc, friend: string) {
-    const user = Sessioning.getUser(session);
-    const friendOid = (await Authing.getUserByUsername(friend))._id;
-    return await Friending.removeFriend(user, friendOid);
+  @Router.delete("/meetings/:id")
+  async cancelMeeting(meetingId: ObjectId) {
+    await Meeting.cancelMeeting(meetingId);
+    return { msg: "Meeting canceled." };
   }
 
-  @Router.get("/friend/requests")
-  async getRequests(session: SessionDoc) {
-    const user = Sessioning.getUser(session);
-    return await Responses.friendRequests(await Friending.getRequests(user));
-  }
-
-  @Router.post("/friend/requests/:to")
-  async sendFriendRequest(session: SessionDoc, to: string) {
-    const user = Sessioning.getUser(session);
-    const toOid = (await Authing.getUserByUsername(to))._id;
-    return await Friending.sendRequest(user, toOid);
-  }
-
-  @Router.delete("/friend/requests/:to")
-  async removeFriendRequest(session: SessionDoc, to: string) {
-    const user = Sessioning.getUser(session);
-    const toOid = (await Authing.getUserByUsername(to))._id;
-    return await Friending.removeRequest(user, toOid);
-  }
-
-  @Router.put("/friend/accept/:from")
-  async acceptFriendRequest(session: SessionDoc, from: string) {
-    const user = Sessioning.getUser(session);
-    const fromOid = (await Authing.getUserByUsername(from))._id;
-    return await Friending.acceptRequest(fromOid, user);
-  }
-
-  @Router.put("/friend/reject/:from")
-  async rejectFriendRequest(session: SessionDoc, from: string) {
-    const user = Sessioning.getUser(session);
-    const fromOid = (await Authing.getUserByUsername(from))._id;
-    return await Friending.rejectRequest(fromOid, user);
+  @Router.get("/locating")
+  async showLocation(sessionId: ObjectId) {
+    const session = await Sessioning.getSession(sessionId);
+    const locationDetails = await Locating.getLocation(session.userId);
+    return { msg: "Location found!", location: locationDetails };
   }
 }
 
