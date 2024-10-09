@@ -76,7 +76,7 @@ class Routes {
     return { msg: "Rating submitted!" };
   }
 
-  @Router.post("/chat")
+  @Router.post("/chatting")
   @Router.validate(z.object({ targetUserId: z.string() }))
   async startChat(sessionId: ObjectId, targetUserId: ObjectId) {
     const session = await Sessioning.getSession(sessionId);
@@ -84,13 +84,13 @@ class Routes {
     return { msg: "Chat began!", chat };
   }
 
-  @Router.get("/chats")
+  @Router.get("/chatting")
   async getChats(userId: ObjectId) {
     const chats = await Chatting.getChatsForUser(userId);
     return { msg: "Chats retrieved.", chats };
   }
 
-  @Router.delete("/chats/:id")
+  @Router.delete("/chatting/:id")
   async endChat(chatId: ObjectId) {
     await Chatting.endChat(chatId);
     return { msg: "Chat ended. Find another match soon?" };
