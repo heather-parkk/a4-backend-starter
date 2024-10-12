@@ -47,3 +47,11 @@ export class AlreadyRatedError extends FormattableError {
 export class AlreadyFriendsError extends FormattableError {
   public readonly HTTP_CODE = 409;
 }
+
+/**
+ * Indicates a request conflict with the current state of the target resource
+ * If this action was a HTTP request, status code for this error would be 409 Conflict error.
+ */
+export class FriendRequestNotFoundError extends FormattableError {
+  public readonly HTTP_CODE = 409;
+}
