@@ -57,32 +57,84 @@ const operations: Operation[] = [
     fields: { username: "input" },
   },
   {
-    name: "Get Posts (empty for all)",
-    endpoint: "/api/posts",
-    method: "GET",
-    fields: { author: "input" },
-  },
-  {
-    name: "Create Post",
-    endpoint: "/api/posts",
+    name: "Rate User",
+    endpoint: "/api/rate",
     method: "POST",
-    fields: { content: "input" },
+    fields: { targetUserId: "input", like: "input" },
   },
   {
-    name: "Update Post",
-    endpoint: "/api/posts/:id",
-    method: "PATCH",
-    fields: { id: "input", content: "input", options: { backgroundColor: "input" } },
+    name: "Start Chat",
+    endpoint: "/api/chatting",
+    method: "POST",
+    fields: { targetUserId: "input" },
   },
   {
-    name: "Delete Post",
-    endpoint: "/api/posts/:id",
+    name: "Get Chats",
+    endpoint: "/api/chatting",
+    method: "GET",
+    fields: {},
+  },
+  {
+    name: "End Chat",
+    endpoint: "/api/chatting/:id",
     method: "DELETE",
     fields: { id: "input" },
   },
-  //
-  // ...
-  //
+  {
+    name: "List Meetings",
+    endpoint: "/api/meetings",
+    method: "GET",
+    fields: {},
+  },
+  {
+    name: "Propose Meeting",
+    endpoint: "/api/meetings",
+    method: "POST",
+    fields: {
+      receiverId: "input",
+      date: "input", // String to hold the date value
+      time: "input", // String to hold the time value
+      location: "input",
+      emergencyContact: "input", // Validation for emergency contact
+    },
+  },
+  {
+    name: "Cancel Meeting",
+    endpoint: "/api/meetings/:id",
+    method: "DELETE",
+    fields: { id: "input" },
+  },
+  {
+    name: "Show Location",
+    endpoint: "/api/locating",
+    method: "GET",
+    fields: {},
+  },
+  {
+    name: "Update Location Sharing",
+    endpoint: "/api/locating",
+    method: "POST",
+    fields: { share: "input" },
+  },
+  {
+    name: "Update User Profile",
+    endpoint: "/api/profile",
+    method: "POST",
+    fields: {
+      gender: "input",
+      age: "input",
+      travelStyle: "input",
+      location: "input",
+      question_1: "input",
+      question_2: "input",
+    },
+  },
+  {
+    name: "Get User Profile",
+    endpoint: "/api/profile",
+    method: "GET",
+    fields: {},
+  },
 ];
 
 /*
@@ -102,7 +154,7 @@ async function request(method: HttpMethod, endpoint: string, params?: unknown) {
       params = undefined;
     }
 
-    const res = fetch(endpoint, {
+    const res = await fetch(endpoint, {
       method,
       headers: {
         "Content-Type": "application/json",
@@ -112,8 +164,8 @@ async function request(method: HttpMethod, endpoint: string, params?: unknown) {
     });
 
     return {
-      $statusCode: (await res).status,
-      $response: await (await res).json(),
+      $statusCode: res.status,
+      $response: await res.json(),
     };
   } catch (e) {
     console.log(e);

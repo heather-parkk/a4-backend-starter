@@ -5,13 +5,13 @@ import { NotAllowedError } from "./errors";
 export interface RatingDoc extends BaseDoc {
   rater: ObjectId;
   ratee: ObjectId;
-  rating: boolean; // true is wanting to match, false if not
+  rating: boolean; // true is like, false is dislike
 }
 
 /**
- * concept: Rating [Rating, Qualities]
+ * concept: Matching [User]
  */
-export default class RatingConcept {
+export default class MatchingConcept {
   public readonly ratings: DocCollection<RatingDoc>;
   public readonly matches: DocCollection<RatingDoc>;
 
@@ -20,7 +20,7 @@ export default class RatingConcept {
     this.matches = new DocCollection<RatingDoc>(collectionName + "_matches");
   }
 
-  // Rater and Ratee rate the user
+  // Rate a user
   async rateUser(rater: ObjectId, ratee: ObjectId, rating: boolean) {
     await this.canRateUser(rater, ratee);
     await this.ratings.createOne({ rater, ratee, rating });
@@ -29,25 +29,27 @@ export default class RatingConcept {
     if (rating) {
       const reciprocalRating = await this.ratings.readOne({ rater: ratee, ratee: rater, rating: true });
       if (reciprocalRating) {
-        // if both rating true, then friend
+        // If both users liked each other, match them
         await this.addFriend(rater, ratee);
       }
     }
-    return { msg: "Rating sent." };
+    return { msg: "Rating successfully submitted." };
   }
 
+  // Fetch ratings for a user
   async getRatings(user: ObjectId) {
     return await this.ratings.readMany({
       $or: [{ rater: user }, { ratee: user }],
     });
   }
 
+  // Add friends if not already matched
   private async addFriend(rater: ObjectId, ratee: ObjectId) {
-    // Ensure they are not already matched
     await this.assertNotFriends(rater, ratee);
     await this.matches.createOne({ rater, ratee });
   }
 
+  // Ensure they are not already friends
   private async assertNotFriends(rater: ObjectId, ratee: ObjectId) {
     const friendship = await this.matches.readOne({
       $or: [
@@ -60,8 +62,8 @@ export default class RatingConcept {
     }
   }
 
+  // Ensure the user has not already rated the other user
   private async canRateUser(rater: ObjectId, ratee: ObjectId) {
-    // Check if they are already rated by this user
     const rating = await this.ratings.readOne({ rater, ratee });
     if (rating) {
       throw new AlreadyRatedError(rater, ratee);
@@ -69,12 +71,13 @@ export default class RatingConcept {
   }
 }
 
+// Custom error classes
 export class AlreadyRatedError extends NotAllowedError {
   constructor(
     public readonly rater: ObjectId,
     public readonly ratee: ObjectId,
   ) {
-    super("User {0} has already rated user {1}.", rater, ratee);
+    super(`User ${rater} has already rated user ${ratee}.`);
   }
 }
 
@@ -83,6 +86,6 @@ export class AlreadyFriendsError extends NotAllowedError {
     public readonly rater: ObjectId,
     public readonly ratee: ObjectId,
   ) {
-    super("Users {0} and {1} are already matched.", rater, ratee);
+    super(`Users ${rater} and ${ratee} are already matched.`);
   }
 }

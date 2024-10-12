@@ -1,15 +1,13 @@
 import { SessionData } from "express-session";
 import { ObjectId } from "mongodb";
-import { NotAllowedError, UnauthenticatedError } from "./errors";
+import { NotAllowedError, NotFoundError, UnauthenticatedError } from "./errors";
 
 export type SessionDoc = SessionData;
 
-// This allows us to overload express session data type.
-// Express session does not support non-string values over requests.
-// We'll be using this to store the user _id in the session.
+// Overload express-session's SessionData to store non-string values like user _id
 declare module "express-session" {
   export interface SessionData {
-    user?: string;
+    user?: string; // Store user as a stringified ObjectId
   }
 }
 
@@ -19,17 +17,26 @@ declare module "express-session" {
 export default class SessioningConcept {
   start(session: SessionDoc, user: ObjectId) {
     this.isLoggedOut(session);
-    session.user = user.toString();
+    session.user = user.toString(); // Store user id as a string in the session
   }
 
   end(session: SessionDoc) {
     this.isLoggedIn(session);
-    session.user = undefined;
+    session.user = undefined; // Clear user from the session
   }
 
-  getUser(session: SessionDoc) {
+  getUser(session: SessionDoc): ObjectId {
     this.isLoggedIn(session);
-    return new ObjectId(session.user);
+    return new ObjectId(session.user); // Convert the stored string back to an ObjectId
+  }
+
+  getSession(sessionId: ObjectId): SessionDoc {
+    // This method simulates a session retrieval process
+    const session = sessionStorage.getSession(sessionId);
+    if (!session) {
+      throw new NotFoundError(`Session ${sessionId} does not exist!`);
+    }
+    return session;
   }
 
   isLoggedIn(session: SessionDoc) {
