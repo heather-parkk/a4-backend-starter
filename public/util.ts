@@ -119,7 +119,7 @@ const operations: Operation[] = [
   {
     name: "Update User Profile",
     endpoint: "/api/profile",
-    method: "POST",
+    method: "PATCH",
     fields: {
       gender: "input",
       age: "input",
