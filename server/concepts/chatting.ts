@@ -61,23 +61,14 @@ export default class ChattingConcept {
     return { msg: "Chat session ended." };
   }
 
-  // Checking who is inside the chat (seems to have error with the chatId)
+  // Checking who is inside the chat
   async assertParticipants(chatId: ObjectId, userId: ObjectId) {
     const session = await this.sessions.readOne({ _id: chatId });
     if (!session) {
       throw new NotFoundError(`Chat session ${chatId} does not exist!`);
     }
-    //if (!session.participants.includes(userId)) {
-    //  throw new NotAllowedError(`User ${userId} is not in this chat ${chatId}!`);
-    //}
-  }
-}
-
-export class NotAllowedError extends NotAllowedError {
-  constructor(
-    public readonly userId: ObjectId,
-    public readonly chatId: ObjectId,
-  ) {
-    super("User {0} is not allowed access to chat session {1}!", userId, chatId);
+    if (!session.participants.includes(userId)) {
+      throw new NotAllowedError(`User ${userId} is not in this chat ${chatId}!`);
+    }
   }
 }

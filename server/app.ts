@@ -1,6 +1,6 @@
 import AuthenticatingConcept from "./concepts/authenticating";
 import ChattingConcept from "./concepts/chatting";
-import RatingConcept from "./concepts/rating";
+import RatingConcept from "./concepts/matching";
 import SessioningConcept from "./concepts/sessioning";
 
 // The app is a composition of concepts instantiated here
